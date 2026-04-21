@@ -14,6 +14,7 @@ export default function TradingBotDashboard() {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [configOpen, setConfigOpen] = useState(!endpoint);
+  const [expandedPos, setExpandedPos] = useState(null);
   const intervalRef = useRef(null);
 
   const fetchStats = async () => {
@@ -331,38 +332,64 @@ export default function TradingBotDashboard() {
                 </div>
                 <div className="divide-y divide-zinc-800/60">
                   {stats.open_positions?.length > 0 ? (
-                    stats.open_positions.map((p, i) => (
-                      <div key={i} className="px-4 py-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-xs px-1.5 py-0.5 ${p.side === "long" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
-                              {p.side?.toUpperCase()}
-                            </span>
-                            <span className="font-bold">{p.symbol}</span>
+                    stats.open_positions.map((p, i) => {
+                      const isExpanded = expandedPos === i;
+                      const hasReasoning = Boolean(p.ai_reasoning || p.signal_reasoning);
+                      return (
+                        <div key={i} className="px-4 py-3">
+                          <div
+                            className={`flex items-center justify-between mb-1 ${hasReasoning ? "cursor-pointer hover:opacity-80" : ""}`}
+                            onClick={() => hasReasoning && setExpandedPos(isExpanded ? null : i)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-1.5 py-0.5 ${p.side === "long" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
+                                {p.side?.toUpperCase()}
+                              </span>
+                              <span className="font-bold">{p.symbol}</span>
+                              {hasReasoning && (
+                                <span className="text-xs text-zinc-600">
+                                  {isExpanded ? "▾" : "▸"}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-zinc-500">{p.strategy}</span>
                           </div>
-                          <span className="text-xs text-zinc-500">{p.strategy}</span>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <div className="text-zinc-500">ENTRY</div>
+                              <div>${p.entry_price}</div>
+                            </div>
+                            <div>
+                              <div className="text-rose-400/70">STOP</div>
+                              <div className="text-rose-400/90">${p.stop_loss}</div>
+                            </div>
+                            <div>
+                              <div className="text-emerald-400/70">TARGET</div>
+                              <div className="text-emerald-400/90">${p.take_profit}</div>
+                            </div>
+                          </div>
+                          {p.ai_regime && (
+                            <div className="mt-2 text-xs text-zinc-500">
+                              <span className="text-purple-400/80">AI</span>: {p.ai_regime}
+                              {p.ai_score != null && ` (${Number(p.ai_score).toFixed(1)})`}
+                              {p.ai_confidence_mult != null && (
+                                <span className="ml-2 text-zinc-600">
+                                  × {Number(p.ai_confidence_mult).toFixed(2)}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {isExpanded && hasReasoning && (
+                            <div className="mt-3 p-3 bg-zinc-950/60 border-l-2 border-purple-500/40 text-xs text-zinc-300 leading-relaxed">
+                              <div className="text-purple-400/80 mb-1 text-[10px] tracking-wider">
+                                CLAUDE REASONING
+                              </div>
+                              {p.ai_reasoning || p.signal_reasoning}
+                            </div>
+                          )}
                         </div>
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div>
-                            <div className="text-zinc-500">ENTRY</div>
-                            <div>${p.entry_price}</div>
-                          </div>
-                          <div>
-                            <div className="text-rose-400/70">STOP</div>
-                            <div className="text-rose-400/90">${p.stop_loss}</div>
-                          </div>
-                          <div>
-                            <div className="text-emerald-400/70">TARGET</div>
-                            <div className="text-emerald-400/90">${p.take_profit}</div>
-                          </div>
-                        </div>
-                        {p.ai_regime && (
-                          <div className="mt-2 text-xs text-zinc-500">
-                            <span className="text-purple-400/80">AI</span>: {p.ai_regime} ({p.ai_score?.toFixed(1)})
-                          </div>
-                        )}
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="px-4 py-8 text-center text-zinc-600 text-xs">
                       No open positions
@@ -450,6 +477,73 @@ export default function TradingBotDashboard() {
                 ) : (
                   <div className="px-4 py-8 text-center text-zinc-600 text-xs">
                     No closed trades yet
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* AI Insights timeline */}
+            <section className="border border-zinc-800 bg-zinc-900/20">
+              <div className="px-4 py-2 border-b border-zinc-800 flex items-center justify-between">
+                <div className="text-xs text-zinc-400 tracking-wider">
+                  AI INSIGHTS
+                  <span className="ml-2 text-purple-400/60">◆ CLAUDE</span>
+                </div>
+                <div className="text-xs text-zinc-500">
+                  {stats.ai_insights?.length || 0} recent
+                </div>
+              </div>
+              <div className="divide-y divide-zinc-800/40">
+                {stats.ai_insights?.length > 0 ? (
+                  [...stats.ai_insights].reverse().slice(0, 10).map((ins, i) => {
+                    const regimeColor =
+                      ins.regime === "trending" ? "emerald"
+                      : ins.regime === "chaotic" ? "rose"
+                      : "zinc";
+                    const badgeClass = {
+                      emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                      rose: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+                      zinc: "bg-zinc-700/20 text-zinc-400 border-zinc-700/40",
+                    }[regimeColor];
+                    const multColor = ins.confidence_mult >= 1.0
+                      ? "text-emerald-400/70"
+                      : ins.confidence_mult >= 0.7 ? "text-amber-400/70"
+                      : "text-rose-400/70";
+                    return (
+                      <div key={i} className="px-4 py-3">
+                        <div className="flex items-start justify-between mb-2 gap-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[10px] px-1.5 py-0.5 border ${badgeClass} tracking-wider`}>
+                              {ins.regime?.toUpperCase()}
+                              {ins.regime_score != null && ` ${Number(ins.regime_score).toFixed(1)}`}
+                            </span>
+                            <span className="text-xs font-bold">{ins.symbol}</span>
+                            {ins.kill_switch && (
+                              <span className="text-[10px] px-1.5 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                                KILL
+                              </span>
+                            )}
+                            {ins.confidence_mult != null && (
+                              <span className={`text-[10px] ${multColor}`}>
+                                × {Number(ins.confidence_mult).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-zinc-500 whitespace-nowrap">
+                            {fmtAgo(ins.ts)} ago
+                          </span>
+                        </div>
+                        {ins.reasoning && (
+                          <div className="text-xs text-zinc-300 leading-relaxed pl-1 border-l-2 border-purple-500/30">
+                            <span className="pl-2 block">{ins.reasoning}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="px-4 py-8 text-center text-zinc-600 text-xs">
+                    No AI insights yet (regime checks run every 2h)
                   </div>
                 )}
               </div>
