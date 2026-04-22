@@ -257,6 +257,116 @@ export default function TradingBotDashboard() {
               />
             </div>
 
+            {/* AI Control Panel — NEXT LEVEL */}
+            {stats.ai_state && (
+              <section className={`border bg-zinc-900/20 ${stats.ai_state.is_paused ? "border-rose-500/40" : "border-purple-500/30"}`}>
+                <div className="px-4 py-2 border-b border-zinc-800 flex items-center justify-between">
+                  <div className="text-xs text-zinc-400 tracking-wider flex items-center gap-2">
+                    <span>🧠 AI CONTROL PANEL</span>
+                    <span className="text-purple-400/60">◆ CLAUDE</span>
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    regime check every {stats.status?.ai_enabled ? "30m" : "—"}
+                  </div>
+                </div>
+                <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Status */}
+                  <div>
+                    <div className="text-[10px] text-zinc-500 tracking-wider mb-1">STATUS</div>
+                    {stats.ai_state.is_paused ? (
+                      <>
+                        <div className="font-display text-xl font-bold text-rose-400">
+                          ● PAUSED
+                        </div>
+                        <div className="text-xs text-rose-400/70 mt-0.5">
+                          {Math.ceil(stats.ai_state.pause_remaining_sec / 60)}m remaining
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="font-display text-xl font-bold text-emerald-400">
+                          ● ACTIVE
+                        </div>
+                        <div className="text-xs text-zinc-500 mt-0.5">trading normally</div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Regime */}
+                  <div>
+                    <div className="text-[10px] text-zinc-500 tracking-wider mb-1">CURRENT REGIME</div>
+                    <div className={`font-display text-xl font-bold uppercase ${
+                      stats.ai_state.current_regime === "trending" ? "text-emerald-400"
+                      : stats.ai_state.current_regime === "chaotic" ? "text-rose-400"
+                      : stats.ai_state.current_regime === "accumulation" ? "text-amber-400"
+                      : "text-zinc-400"
+                    }`}>
+                      {stats.ai_state.current_regime || "—"}
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-0.5">detected by Claude</div>
+                  </div>
+
+                  {/* Sizing Multiplier */}
+                  <div>
+                    <div className="text-[10px] text-zinc-500 tracking-wider mb-1">SIZING MULT</div>
+                    <div className={`font-display text-xl font-bold tabular-nums ${
+                      stats.ai_state.current_sizing_mult >= 1.3 ? "text-emerald-400"
+                      : stats.ai_state.current_sizing_mult >= 0.9 ? "text-zinc-200"
+                      : "text-amber-400"
+                    }`}>
+                      × {stats.ai_state.current_sizing_mult?.toFixed(2) || "1.00"}
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-0.5">
+                      {stats.ai_state.current_sizing_mult >= 1.5 ? "high conviction"
+                      : stats.ai_state.current_sizing_mult >= 1.0 ? "normal"
+                      : stats.ai_state.current_sizing_mult >= 0.6 ? "cautious"
+                      : "very cautious"}
+                    </div>
+                  </div>
+
+                  {/* Active Count */}
+                  <div>
+                    <div className="text-[10px] text-zinc-500 tracking-wider mb-1">STRATEGIES</div>
+                    <div className="font-display text-xl font-bold">
+                      <span className="text-emerald-400">{stats.ai_state.enabled_strategies?.length || 0}</span>
+                      <span className="text-zinc-600"> / 5</span>
+                    </div>
+                    <div className="text-xs text-zinc-500 mt-0.5">enabled by Claude</div>
+                  </div>
+                </div>
+
+                {/* Strategy badges */}
+                <div className="px-4 pb-4 pt-0">
+                  <div className="text-[10px] text-zinc-500 tracking-wider mb-2">STRATEGY STATE</div>
+                  <div className="flex flex-wrap gap-2">
+                    {["momentum_breakout", "trend_following", "grid_dynamic", "mean_reversion", "vol_harvest"].map(name => {
+                      const enabled = stats.ai_state.enabled_strategies?.includes(name);
+                      return (
+                        <div
+                          key={name}
+                          className={`px-2 py-1 text-xs border ${
+                            enabled
+                              ? "border-emerald-500/40 bg-emerald-500/5 text-emerald-400"
+                              : "border-zinc-700 bg-zinc-900/40 text-zinc-600 line-through"
+                          }`}
+                        >
+                          {enabled ? "✓ " : "✗ "}{name}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Pause reason (if paused) */}
+                {stats.ai_state.is_paused && stats.ai_state.pause_reason && (
+                  <div className="mx-4 mb-4 p-3 bg-rose-950/30 border-l-2 border-rose-500/50 text-xs text-rose-300/90 leading-relaxed">
+                    <div className="text-rose-400/80 text-[10px] tracking-wider mb-1">PAUSE REASON</div>
+                    {stats.ai_state.pause_reason}
+                  </div>
+                )}
+              </section>
+            )}
+
             {/* Equity curve */}
             <section className="border border-zinc-800 bg-zinc-900/20">
               <div className="px-4 py-2 border-b border-zinc-800 flex items-center justify-between">
@@ -523,9 +633,19 @@ export default function TradingBotDashboard() {
                                 KILL
                               </span>
                             )}
+                            {ins.pause_minutes > 0 && (
+                              <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                                PAUSE {ins.pause_minutes}m
+                              </span>
+                            )}
                             {ins.confidence_mult != null && (
                               <span className={`text-[10px] ${multColor}`}>
                                 × {Number(ins.confidence_mult).toFixed(2)}
+                              </span>
+                            )}
+                            {ins.conviction_tier && ins.conviction_tier !== "medium" && (
+                              <span className={`text-[10px] ${ins.conviction_tier === "high" ? "text-emerald-400/70" : "text-zinc-500"}`}>
+                                {ins.conviction_tier.toUpperCase()} CONVICTION
                               </span>
                             )}
                           </div>
@@ -533,6 +653,15 @@ export default function TradingBotDashboard() {
                             {fmtAgo(ins.ts)} ago
                           </span>
                         </div>
+                        {ins.enabled_strategies && ins.enabled_strategies.length > 0 && (
+                          <div className="mb-2 flex flex-wrap gap-1">
+                            {ins.enabled_strategies.map(s => (
+                              <span key={s} className="text-[10px] px-1.5 py-0.5 bg-emerald-500/5 text-emerald-400/80 border border-emerald-500/20">
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         {ins.reasoning && (
                           <div className="text-xs text-zinc-300 leading-relaxed pl-1 border-l-2 border-purple-500/30">
                             <span className="pl-2 block">{ins.reasoning}</span>
@@ -543,7 +672,7 @@ export default function TradingBotDashboard() {
                   })
                 ) : (
                   <div className="px-4 py-8 text-center text-zinc-600 text-xs">
-                    No AI insights yet (regime checks run every 2h)
+                    No AI insights yet (regime checks run every 30m)
                   </div>
                 )}
               </div>
