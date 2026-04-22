@@ -329,7 +329,7 @@ export default function TradingBotDashboard() {
                     <div className="text-[10px] text-zinc-500 tracking-wider mb-1">STRATEGIES</div>
                     <div className="font-display text-xl font-bold">
                       <span className="text-emerald-400">{stats.ai_state.enabled_strategies?.length || 0}</span>
-                      <span className="text-zinc-600"> / 5</span>
+                      <span className="text-zinc-600"> / 6</span>
                     </div>
                     <div className="text-xs text-zinc-500 mt-0.5">enabled by Claude</div>
                   </div>
@@ -339,7 +339,7 @@ export default function TradingBotDashboard() {
                 <div className="px-4 pb-4 pt-0">
                   <div className="text-[10px] text-zinc-500 tracking-wider mb-2">STRATEGY STATE</div>
                   <div className="flex flex-wrap gap-2">
-                    {["momentum_breakout", "trend_following", "grid_dynamic", "mean_reversion", "vol_harvest"].map(name => {
+                    {["momentum_breakout", "trend_following", "trend_pullback", "grid_dynamic", "mean_reversion", "vol_harvest"].map(name => {
                       const enabled = stats.ai_state.enabled_strategies?.includes(name);
                       return (
                         <div
