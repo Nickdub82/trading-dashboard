@@ -279,7 +279,16 @@ export default function TradingBotDashboard() {
                           ● PAUSED
                         </div>
                         <div className="text-xs text-rose-400/70 mt-0.5">
-                          {Math.ceil(stats.ai_state.pause_remaining_sec / 60)}m remaining
+                          all symbols paused
+                        </div>
+                      </>
+                    ) : stats.ai_state.paused_symbols?.length > 0 ? (
+                      <>
+                        <div className="font-display text-xl font-bold text-amber-400">
+                          ◐ PARTIAL
+                        </div>
+                        <div className="text-xs text-amber-400/70 mt-0.5">
+                          {stats.ai_state.paused_symbols.length} symbol{stats.ai_state.paused_symbols.length > 1 ? "s" : ""} paused
                         </div>
                       </>
                     ) : (
@@ -287,7 +296,7 @@ export default function TradingBotDashboard() {
                         <div className="font-display text-xl font-bold text-emerald-400">
                           ● ACTIVE
                         </div>
-                        <div className="text-xs text-zinc-500 mt-0.5">trading normally</div>
+                        <div className="text-xs text-zinc-500 mt-0.5">all symbols trading</div>
                       </>
                     )}
                   </div>
@@ -357,11 +366,25 @@ export default function TradingBotDashboard() {
                   </div>
                 </div>
 
-                {/* Pause reason (if paused) */}
-                {stats.ai_state.is_paused && stats.ai_state.pause_reason && (
-                  <div className="mx-4 mb-4 p-3 bg-rose-950/30 border-l-2 border-rose-500/50 text-xs text-rose-300/90 leading-relaxed">
-                    <div className="text-rose-400/80 text-[10px] tracking-wider mb-1">PAUSE REASON</div>
-                    {stats.ai_state.pause_reason}
+                {/* Paused symbols detail (per-symbol pause info) */}
+                {stats.ai_state.paused_symbols?.length > 0 && (
+                  <div className="mx-4 mb-4 space-y-2">
+                    {stats.ai_state.paused_symbols.map((ps, i) => (
+                      <div key={i} className="p-3 bg-amber-950/20 border-l-2 border-amber-500/50 text-xs leading-relaxed">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-amber-400 font-bold text-sm">{ps.symbol}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              PAUSED
+                            </span>
+                          </div>
+                          <span className="text-amber-400/70 text-xs">
+                            {Math.ceil(ps.pause_remaining_sec / 60)}m remaining
+                          </span>
+                        </div>
+                        <div className="text-amber-200/70">{ps.pause_reason}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </section>
